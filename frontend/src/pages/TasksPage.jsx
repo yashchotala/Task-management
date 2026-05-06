@@ -29,15 +29,32 @@ export default function TasksPage() {
 
     try {
 
-      const [tasksRes, projectsRes, usersRes] = await Promise.all([
+      // Tasks + Projects always load
+      const [tasksRes, projectsRes] = await Promise.all([
         API.get("/tasks"),
         API.get("/projects"),
-        API.get("/users"),
       ]);
 
-      setTasks(tasksRes.data.tasks);
-      setProjects(projectsRes.data.projects);
-      setUsers(usersRes.data.users);
+      setTasks(tasksRes.data.tasks || []);
+      setProjects(projectsRes.data.projects || []);
+
+      // Users API separate rakhi hai
+      // taki users API fail hone par
+      // tasks/projects break na ho
+      try {
+
+        const usersRes = await API.get("/users");
+
+        setUsers(usersRes.data.users || []);
+
+      } catch (error) {
+
+        console.log("Users API failed");
+      }
+
+    } catch (error) {
+
+      console.log(error);
 
     } finally {
 
@@ -207,10 +224,13 @@ export default function TasksPage() {
 
               <option value="">Assign To</option>
 
-              {users.map((u) => (
+              {(users.length > 0
+                ? users
+                : projects.find((p) => p._id === formData.projectId)?.members || []
+              ).map((u) => (
 
                 <option key={u._id} value={u._id}>
-                  {u.name}
+                  {u.name || u.email}
                 </option>
               ))}
             </select>
